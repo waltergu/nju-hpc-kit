@@ -7,6 +7,8 @@ KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONF="$KIT_DIR/hpc.conf"
 SSH_CONFIG="$HOME/.ssh/config"
 KEY_FILE="$HOME/.ssh/id_ed25519"
+SSH_ALIAS='nju-hpc'
+SSH_ALIAS_ENTRY='nju-hpc-entry'
 
 ask() {  # ask <prompt> <default>
     local prompt="$1" default="$2" reply
@@ -22,6 +24,7 @@ LOGIN_NODE='$LOGIN_NODE'
 LOGIN_IP='${1:-}'
 USERLAND_PORT='${2:-}'
 ENTRY_HOST='$ENTRY_HOST'
+GATEWAY_DEST='$GATEWAY_DEST'
 SSH_ALIAS='nju-hpc'
 SSH_ALIAS_ENTRY='nju-hpc-entry'
 KEY_FILE='$KEY_FILE'
@@ -37,6 +40,9 @@ while [ -z "$HPC_USER" ]; do
 done
 LOGIN_NODE="$(ask "登录节点" "login2")"
 ENTRY_HOST="$(ask "双认证网关" "entry.nju.edu.cn")"
+# 网关用户名需要目标节点编码（格式：用户/目标内网地址/self），
+# 否则网关拒绝执行请求（exec request failed）。
+GATEWAY_DEST="$(ask "网关目标节点内网地址（login2=10.1.0.102）" "10.1.0.102")"
 # 用户态 sshd 端口无需配置：首次连接时由 ensure-userland.sh 在登录节点
 # 自动选择空闲高位端口（20000–59999 随机），并回写到本文件。
 
@@ -55,7 +61,7 @@ if ! grep -q "Host $SSH_ALIAS_ENTRY" "$SSH_CONFIG" 2>/dev/null; then
 
 Host $SSH_ALIAS_ENTRY
   HostName $ENTRY_HOST
-  User $HPC_USER
+  User $HPC_USER/$GATEWAY_DEST/self
 
 Host $SSH_ALIAS
   HostName $LOGIN_NODE

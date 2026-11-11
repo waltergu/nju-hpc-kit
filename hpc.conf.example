@@ -7,6 +7,7 @@ LOGIN_IP=''                 # 首次连接后自动回填（210.28.x.x）
 USERLAND_PORT=''            # 首次连接后由 ensure-userland 自动选择空闲端口并回填；
                             # 留空表示 campus 直连尚未就绪（探测自动跳过）
 ENTRY_HOST='entry.nju.edu.cn'
+GATEWAY_DEST='10.1.0.102'   # 网关用户名编码：用户/目标内网地址/self（login2）
 SSH_ALIAS='nju-hpc'
 SSH_ALIAS_ENTRY='nju-hpc-entry'
 KEY_FILE="$HOME/.ssh/id_ed25519"

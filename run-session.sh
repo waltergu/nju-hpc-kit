@@ -24,7 +24,20 @@ if [ "$MODE" = "offcampus" ]; then
     OUT_LOG="$SESSION_DIR/output.log"
     PID_FILE="$SESSION_DIR/ssh.pid"
 
-    if [ ! -p "$CMD_FIFO" ] || [ ! -s "$PID_FILE" ] || ! kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+    is_ssh_pid() {  # 校验 pid 属于 ssh（Git Bash 下 kill -0 对原生 ssh.exe 失效，须用 tasklist）
+        local pid="$1" comm
+        if comm="$(ps -o comm= -p "$pid" 2>/dev/null)" && [ -n "$comm" ]; then
+            case "$comm" in *ssh*) return 0 ;; *) return 1 ;; esac
+        fi
+        if command -v tasklist >/dev/null 2>&1; then
+            case "$(tasklist //FI "PID eq $pid" 2>/dev/null)" in
+                *ssh*) return 0 ;; *) return 1 ;;
+            esac
+        fi
+        return 1
+    }
+
+    if [ ! -p "$CMD_FIFO" ] || [ ! -s "$PID_FILE" ] || ! is_ssh_pid "$(cat "$PID_FILE")"; then
         cat >&2 <<EOF
 校外网会话不存在或已断开。
 请用户运行： bash $KIT_DIR/start-session.sh
@@ -39,14 +52,14 @@ EOF
     offset="$(wc -c < "$OUT_LOG")"
     payload="$(printf '%s' "$remote_cmd" | base64 -w0)"
     inner='__p='"$payload"'; bash -c "$(printf %s "$__p" | base64 -d)"'
-    line="printf '%s\\n' '$begin'; ( $inner ); __rc=\$?; printf '%s\\n' '${end}':\$__rc"
+    line="printf '%s\\n' '$begin'; ( $inner ); __rc=\$?; printf '\\n%s\\n' '${end}':\$__rc"
     printf '%s\n' "$line" > "$CMD_FIFO"
 
     for _ in $(seq 1 30); do
         if tail -c +$((offset + 1)) "$OUT_LOG" 2>/dev/null | grep -qF "$end"; then
             break
         fi
-        kill -0 "$(cat "$PID_FILE")" 2>/dev/null || { echo "命令执行中会话断开。" >&2; exit 2; }
+        is_ssh_pid "$(cat "$PID_FILE")" 2>/dev/null || { echo "命令执行中会话断开。" >&2; exit 2; }
         sleep 1
     done
     if ! tail -c +$((offset + 1)) "$OUT_LOG" 2>/dev/null | grep -qF "$end"; then
