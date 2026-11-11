@@ -42,6 +42,8 @@ nju-hpc-kit/
    - 集群用户名（**必填**，不设默认值；任何账号都适用）；
    - 登录节点（默认 login2；集群迁移后入口只有 login2，不要再用 login1）；
    - 双认证网关（默认 entry.nju.edu.cn）；
+   - 网关目标节点内网地址（默认 10.1.0.102，即 login2；网关用户名
+     需按 `用户/该地址/self` 编码，否则拒绝执行请求）；
    - 用户态 sshd 端口**无需回答**：首次连接时由 ensure-userland.sh
      在登录节点自动选择空闲高位端口（20000–59999 随机），
      并回写到本机 hpc.conf；如与他人冲突，自愈时会自动让位并回填新端口。
@@ -56,7 +58,7 @@ nju-hpc-kit/
    （`nju-hpc-entry` = 双认证网关）、生成或复用本机密钥
    `~/.ssh/id_ed25519`。直连别名 `nju-hpc` 不在此创建——首次连接后由
    自愈回填自动写入并随 IP/端口变化更新（免密直连 `ssh nju-hpc` /
-   `sftp nju-hpc` 即用）。
+   `sftp nju-hpc` 即用；**仅校内网/校园 VPN 下可达**，校外网会超时属正常）。
 5. 冒烟测试：
    - `bash ~/nju-hpc-kit/detect-net.sh` → 应输出 `campus` 或 `offcampus`
    - `bash ~/nju-hpc-kit/run-session.sh 'hostname'` → 应输出 `login2`
@@ -87,6 +89,9 @@ nju-hpc-kit/
   命令经"持久会话"执行——一条长驻 SSH 连接（建立时已人工完成
   密码+两步认证）。
 - **none**：两者都不可达 → 报告网络不可用，停止。
+
+注意：校外网环境下每次 detect 都会先尝试 campus 探测并等待其超时
+（约 6 秒，ConnectTimeout）再降级为 offcampus——这是正常开销，不是故障。
 
 ### 自愈设计（重要）
 
