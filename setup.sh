@@ -92,7 +92,13 @@ if [ "$oncampus" = "y" ]; then
             echo "-> campus 模式就绪：$HPC_USER@$ip:$newport（免密）"
         fi
     else
-        echo "!! 直连登录失败；可稍后重跑 setup.sh 或改用 start-session.sh" >&2
+        if getent hosts "$LOGIN_NODE" >/dev/null 2>&1; then
+            echo "!! 直连登录失败（密码错误或网络受限）。" >&2
+        else
+            echo "!! 节点名 $LOGIN_NODE 无法解析（VPN/校外环境属正常现象）。" >&2
+        fi
+        echo "   改走校外网路径：bash $KIT_DIR/start-session.sh" >&2
+        echo "   （完成密码+两步认证后，会自动部署免密直连并回填配置。）" >&2
     fi
 else
     echo "-> 跳过免密配置（校外网模式）。首次使用请先运行 start-session.sh"
