@@ -1,0 +1,4 @@
+# 机器/用户相关的本机配置——setup.sh 首次安装时生成，勿提交入库
+hpc.conf
+.session/
+*.log

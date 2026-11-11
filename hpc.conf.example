@@ -1,0 +1,12 @@
+# hpc.conf 示例。首次运行 setup.sh 时会生成本机的 hpc.conf
+# （该文件含机器/用户特定信息，已被 .gitignore 排除，不入库）。
+# 各字段含义见 README-agent.md。
+HPC_USER='your_cluster_username'
+LOGIN_NODE='login2'
+LOGIN_IP=''                 # 首次连接后自动回填（210.28.x.x）
+USERLAND_PORT='29422'
+ENTRY_HOST='entry.nju.edu.cn'
+SSH_ALIAS='nju-hpc'
+SSH_ALIAS_ENTRY='nju-hpc-entry'
+KEY_FILE="$HOME/.ssh/id_ed25519"
+KIT_DIR="$HOME/nju-hpc-kit"
