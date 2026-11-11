@@ -4,7 +4,8 @@
 HPC_USER='your_cluster_username'
 LOGIN_NODE='login2'
 LOGIN_IP=''                 # 首次连接后自动回填（210.28.x.x）
-USERLAND_PORT='29422'
+USERLAND_PORT=''            # 首次连接后由 ensure-userland 自动选择空闲端口并回填；
+                            # 留空表示 campus 直连尚未就绪（探测自动跳过）
 ENTRY_HOST='entry.nju.edu.cn'
 SSH_ALIAS='nju-hpc'
 SSH_ALIAS_ENTRY='nju-hpc-entry'

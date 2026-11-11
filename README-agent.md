@@ -42,7 +42,9 @@ nju-hpc-kit/
    - 集群用户名（**必填**，不设默认值；任何账号都适用）；
    - 登录节点（默认 login2；集群迁移后入口只有 login2，不要再用 login1）；
    - 双认证网关（默认 entry.nju.edu.cn）；
-   - 用户态 sshd 端口（默认 29422；如与他人冲突可改）；
+   - 用户态 sshd 端口**无需回答**：首次连接时由 ensure-userland.sh
+     在登录节点自动选择空闲高位端口（20000–59999 随机），
+     并回写到本机 hpc.conf；如与他人冲突，自愈时会自动让位并回填新端口。
    - 当前是否为校内网 / 已连校园 VPN：
      * **y** —— 引导输入一次集群密码，随后自动完成：公钥安装、
        用户态 sshd 部署（按集群官方文档：仅公钥、高位端口、绑 0.0.0.0）、
@@ -88,9 +90,10 @@ nju-hpc-kit/
 
 登录节点重启或用户态 sshd 意外死亡后，campus 模式会失效。
 `start-session.sh` 在每次（人工认证）会话建立后，会自动通过该会话
-在登录节点上执行 `ensure-userland.sh`：补装公钥、缺失则生成
-sshd 配置、sshd 没在跑就拉起，并把最新校园网 IP 回写 `hpc.conf`。
-因此：**用户每次做两步认证，都在同时修复 campus 通道**。
+在登录节点上执行 `ensure-userland.sh`：补装公钥、按模板重建
+sshd_config（端口沿用现有空闲端口；被占用则自动另选并把新端口
+回填本机 hpc.conf）、sshd 没在跑就拉起，并把最新校园网 IP 回写
+`hpc.conf`。因此：**用户每次做两步认证，都在同时修复 campus 通道**。
 
 ### 校外网持久会话生命周期
 
@@ -134,6 +137,7 @@ sshd 配置、sshd 没在跑就拉起，并把最新校园网 IP 回写 `hpc.con
 |---|---|
 | run-session 报"会话不存在" | 校外网会话断了；请用户重新 start-session（会自动自愈 campus 通道） |
 | detect-net 输出 none | 本机断网或网关不可达；请用户检查网络/VPN |
-| campus 模式探测失败 | 用户态 sshd 死了；请用户 start-session 一次（自愈），或重跑 setup.sh |
+| campus 模式探测失败 | 用户态 sshd 死了或端口变了；请用户 start-session 一次（自愈并回填端口/IP），或重跑 setup.sh |
+| 想更换用户态 sshd 端口 | 直接改本机 hpc.conf 的 USERLAND_PORT，再跑一次 start-session（或等下次自愈）自动重建 |
 | 命令返回 255 / Connection timed out | 网络抖动；重试一次，仍失败则重新探测网络模式 |
 | setup 时直连密码登录失败 | 确认在校内网/VPN 环境；否则选 n，走 start-session 路径 |

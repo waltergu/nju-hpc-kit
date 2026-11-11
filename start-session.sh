@@ -6,7 +6,8 @@
 # 输出经 ssh 带回并追加进 OUT_LOG。
 set -euo pipefail
 KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$KIT_DIR/hpc.conf"
+CONF="$KIT_DIR/hpc.conf"
+source "$CONF"
 
 SESSION_DIR="$KIT_DIR/.session"
 CMD_FIFO="$SESSION_DIR/commands.fifo"
@@ -43,14 +44,15 @@ pub_file="$KEY_FILE.pub"
 if [ -f "$pub_file" ]; then
     pub="$(base64 -w0 "$pub_file")"
     bash "$KIT_DIR/send-file.sh" "$KIT_DIR/ensure-userland.sh" "\$HOME/.ensure-userland.sh" >/dev/null 2>&1 || true
-    if bash "$KIT_DIR/run-session.sh" "PUB_B64='$pub' PORT='$USERLAND_PORT' bash \$HOME/.ensure-userland.sh" 2>/dev/null; then
-        # 把探测到的校园网 IP 回写进 hpc.conf
-        ip="$(bash "$KIT_DIR/run-session.sh" 'hostname -I' 2>/dev/null | tr " " "\n" | grep -E "^210\.28\." | head -1)"
-        if [ -n "$ip" ] && ! grep -q "^LOGIN_IP='$ip'" "$CONF"; then
-            sed -i "s/^LOGIN_IP=.*/LOGIN_IP='$ip'/" "$CONF" 2>/dev/null || true
-        fi
-    else
-        echo "（自愈步骤未成功；campus 模式可能不可用，校外网模式不受影响。）" >&2
+    out="$(bash "$KIT_DIR/run-session.sh" "PUB_B64='$pub' PORT='$USERLAND_PORT' bash \$HOME/.ensure-userland.sh" 2>/dev/null || true)"
+    printf '%s\n' "$out" | grep -q USERLAND_OK \
+        || echo "（自愈步骤未成功；campus 模式可能不可用，校外网模式不受影响。）" >&2
+    # 把自愈报告的实际端口与最新校园网 IP 回写 hpc.conf
+    newport="$(printf '%s\n' "$out" | sed -n 's/.*USERLAND_OK port=\([0-9][0-9]*\).*/\1/p' | tail -1)"
+    [ -n "$newport" ] && sed -i "s/^USERLAND_PORT=.*/USERLAND_PORT='$newport'/" "$CONF" 2>/dev/null || true
+    ip="$(bash "$KIT_DIR/run-session.sh" 'hostname -I' 2>/dev/null | tr " " "\n" | grep -E "^210\.28\." | head -1)"
+    if [ -n "$ip" ] && ! grep -q "^LOGIN_IP='$ip'" "$CONF"; then
+        sed -i "s/^LOGIN_IP=.*/LOGIN_IP='$ip'/" "$CONF" 2>/dev/null || true
     fi
 fi
 
