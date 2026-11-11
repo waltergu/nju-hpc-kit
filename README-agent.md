@@ -165,3 +165,14 @@ sshd_config（端口沿用现有空闲端口；被占用则自动另选并把新
 | 想更换用户态 sshd 端口 | 直接改本机 hpc.conf 的 USERLAND_PORT，再跑一次 start-session（或等下次自愈）自动重建 |
 | 命令返回 255 / Connection timed out | 网络抖动；重试一次，仍失败则重新探测网络模式 |
 | setup 时直连密码登录失败 | 确认在校内网/VPN 环境；否则选 n，走 start-session 路径 |
+
+## 5. 参考
+
+集群的官方文档（含常见问题、登录方式、节点/分区调整与迁移通知）：
+
+- 文档首页：https://doc.nju.edu.cn/books/efe93
+- 常见问题（网络接入、用户态 sshd、作业调度等）：
+  https://doc.nju.edu.cn/books/efe93/page/a1d0c
+
+集群策略（登录入口、分区划分、迁移计划）可能随时间变化；当本套件的
+行为与集群实际表现不符时，以官方文档为准并相应更新套件。
