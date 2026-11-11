@@ -9,6 +9,7 @@ set -euo pipefail
 KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONF="$KIT_DIR/hpc.conf"
 source "$CONF"
+SSH_CONFIG="$HOME/.ssh/config"
 
 SESSION_DIR="$KIT_DIR/.session"
 CMD_FIFO="$SESSION_DIR/commands.fifo"
@@ -35,6 +36,22 @@ is_ssh_pid() {  # 校验 pid 确实属于 ssh 进程（防 pid 复用误判）�
         esac
     fi
     return 1
+}
+
+update_direct_alias() {  # 创建/更新直连别名块: $1=ip $2=port
+    local ip="$1" port="$2" tmp
+    [ -n "$ip" ] && [ -n "$port" ] || return 0
+    tmp="$(mktemp)"
+    awk -v alias="Host $SSH_ALIAS" \
+        -v block="Host $SSH_ALIAS\n  HostName $ip\n  Port $port\n  User $HPC_USER\n  IdentityFile $KEY_FILE" '
+        $0 == alias { print block; skip=1; next }
+        /^Host / { skip=0 }
+        !skip { print }
+    ' "$SSH_CONFIG" > "$tmp" && cat "$tmp" > "$SSH_CONFIG" && rm -f "$tmp"
+    if ! grep -q "^Host $SSH_ALIAS\$" "$SSH_CONFIG" 2>/dev/null; then
+        printf '\n%s\n  HostName %s\n  Port %s\n  User %s\n  IdentityFile %s\n' \
+            "Host $SSH_ALIAS" "$ip" "$port" "$HPC_USER" "$KEY_FILE" >> "$SSH_CONFIG"
+    fi
 }
 
 if session_alive && [ "${1:-}" != "--force" ]; then
@@ -126,6 +143,7 @@ if [ -f "$pub_file" ]; then
     if [ -n "$ip" ] && ! grep -q "^LOGIN_IP='$ip'" "$CONF"; then
         sed -i "s/^LOGIN_IP=.*/LOGIN_IP='$ip'/" "$CONF" 2>/dev/null || true
     fi
+    update_direct_alias "${ip:-$LOGIN_IP}" "${newport:-$USERLAND_PORT}"
 fi
 
 echo "注意：会话会被网关定期断开（经验观察为数小时，具体时长未公开）；断开后重新运行本脚本即可。"

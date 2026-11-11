@@ -33,6 +33,22 @@ EOF
     chmod 600 "$CONF"
 }
 
+update_direct_alias() {  # 创建/更新直连别名块: $1=ip $2=port
+    local ip="$1" port="$2" tmp
+    [ -n "$ip" ] && [ -n "$port" ] || return 0
+    tmp="$(mktemp)"
+    awk -v alias="Host $SSH_ALIAS" \
+        -v block="Host $SSH_ALIAS\n  HostName $ip\n  Port $port\n  User $HPC_USER\n  IdentityFile $KEY_FILE" '
+        $0 == alias { print block; skip=1; next }
+        /^Host / { skip=0 }
+        !skip { print }
+    ' "$SSH_CONFIG" > "$tmp" && cat "$tmp" > "$SSH_CONFIG" && rm -f "$tmp"
+    if ! grep -q "^Host $SSH_ALIAS\$" "$SSH_CONFIG" 2>/dev/null; then
+        printf '\n%s\n  HostName %s\n  Port %s\n  User %s\n  IdentityFile %s\n' \
+            "Host $SSH_ALIAS" "$ip" "$port" "$HPC_USER" "$KEY_FILE" >> "$SSH_CONFIG"
+    fi
+}
+
 echo "== NJU HPC kit setup =="
 HPC_USER=""
 while [ -z "$HPC_USER" ]; do
@@ -62,14 +78,11 @@ if ! grep -q "Host $SSH_ALIAS_ENTRY" "$SSH_CONFIG" 2>/dev/null; then
 Host $SSH_ALIAS_ENTRY
   HostName $ENTRY_HOST
   User $HPC_USER/$GATEWAY_DEST/self
-
-Host $SSH_ALIAS
-  HostName $LOGIN_NODE
-  User $HPC_USER
 EOF
-    echo "-> ssh config 已追加别名（$SSH_ALIAS_ENTRY, $SSH_ALIAS）"
+    echo "-> ssh config 已追加网关别名 $SSH_ALIAS_ENTRY"
+    echo "  （直连别名 $SSH_ALIAS 将在首次连接后由自愈回填自动创建）"
 else
-    echo "-> ssh config 别名已存在，跳过"
+    echo "-> ssh config 网关别名已存在，跳过"
 fi
 
 echo
@@ -94,7 +107,7 @@ if [ "$oncampus" = "y" ]; then
         ip="$(ssh "$target" 'hostname -I' | tr ' ' '\n' | grep -E '^210\.28\.' | head -1)"
         if [ -n "$ip" ] && [ -n "$newport" ]; then
             write_conf "$ip" "$newport"
-            sed -i "/Host $SSH_ALIAS\$/,/User /s/HostName .*/HostName $ip/" "$SSH_CONFIG" 2>/dev/null || true
+            update_direct_alias "$ip" "$newport"
             echo "-> campus 模式就绪：$HPC_USER@$ip:$newport（免密）"
         fi
     else
