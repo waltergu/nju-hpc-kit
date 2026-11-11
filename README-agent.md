@@ -56,9 +56,11 @@ nju-hpc-kit/
        认证时，会自动补做同样部署（自愈设计，见第 2 节）。
 4. setup.sh 还会：生成本机 `hpc.conf`、追加 SSH config 网关别名
    （`nju-hpc-entry` = 双认证网关）、生成或复用本机密钥
-   `~/.ssh/id_ed25519`。直连别名 `nju-hpc` 不在此创建——首次连接后由
-   自愈回填自动写入并随 IP/端口变化更新（免密直连 `ssh nju-hpc` /
-   `sftp nju-hpc` 即用；**仅校内网/校园 VPN 下可达**，校外网会超时属正常）。
+   `~/.ssh/id_ed25519`、安装用户级 skill 到 `~/.agents/skills/nju-hpc/`
+   （之后的 Kimi Code 新对话会在 skill 列表中看到本套件并按任务自动
+   触发）。直连别名 `nju-hpc` 不在此创建——首次连接后由自愈回填自动
+   写入并随 IP/端口变化更新（免密直连 `ssh nju-hpc` / `sftp nju-hpc`
+   即用；**仅校内网/校园 VPN 下可达**，校外网会超时属正常）。
 5. 冒烟测试：
    - `bash ~/nju-hpc-kit/detect-net.sh` → 应输出 `campus` 或 `offcampus`
    - `bash ~/nju-hpc-kit/run-session.sh 'hostname'` → 应输出 `login2`

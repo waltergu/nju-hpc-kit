@@ -68,8 +68,29 @@ if [ ! -f "$KEY_FILE" ]; then
     echo "-> 生成本机密钥 $KEY_FILE"
 fi
 
-write_conf ""
+# 重跑 setup 时保留已有的回填状态（IP/端口），避免清空已配置信息
+prev_ip=""
+prev_port=""
+if [ -f "$CONF" ]; then
+    prev_ip="$(grep -o "^LOGIN_IP='[^']*'" "$CONF" 2>/dev/null | sed "s/^LOGIN_IP='//;s/'\$//" || true)"
+    prev_port="$(grep -o "^USERLAND_PORT='[^']*'" "$CONF" 2>/dev/null | sed "s/^USERLAND_PORT='//;s/'\$//" || true)"
+fi
+
+write_conf "$prev_ip" "$prev_port"
 echo "-> wrote $CONF"
+
+# 安装用户级 skill（新对话自动发现本套件）
+SKILL_DIR="$HOME/.agents/skills/nju-hpc"
+if [ -f "$KIT_DIR/skill/SKILL.md" ]; then
+    mkdir -p "$SKILL_DIR"
+    ln -sfn "$KIT_DIR/skill/SKILL.md" "$SKILL_DIR/SKILL.md" 2>/dev/null || true
+    if [ -L "$SKILL_DIR/SKILL.md" ]; then
+        echo "-> skill 已安装（符号链接，随 git pull 自动更新）: $SKILL_DIR"
+    else
+        cp "$KIT_DIR/skill/SKILL.md" "$SKILL_DIR/SKILL.md"
+        echo "-> skill 已安装（本机不支持符号链接，为拷贝；git pull 后重跑 setup.sh 刷新）: $SKILL_DIR"
+    fi
+fi
 
 touch "$SSH_CONFIG"; chmod 600 "$SSH_CONFIG"
 if ! grep -q "Host $SSH_ALIAS_ENTRY" "$SSH_CONFIG" 2>/dev/null; then
