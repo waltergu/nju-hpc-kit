@@ -143,6 +143,7 @@ sshd_config（端口沿用现有空闲端口；被占用则自动另选并把新
 | 现象 | 处理 |
 |---|---|
 | run-session 报"会话不存在" | 校外网会话断了；请用户重新 start-session（会自动自愈 campus 通道） |
+| 重跑 start 提示"会话已存在"/旧脚本要求先 stop | 套件只认真实存活且确实是 ssh 的会话，失效会话会直接重建；状态混乱时用 `start-session.sh --force` |
 | detect-net 输出 none | 本机断网或网关不可达；请用户检查网络/VPN |
 | campus 模式探测失败 | 用户态 sshd 死了或端口变了；请用户 start-session 一次（自愈并回填端口/IP），或重跑 setup.sh |
 | 想更换用户态 sshd 端口 | 直接改本机 hpc.conf 的 USERLAND_PORT，再跑一次 start-session（或等下次自愈）自动重建 |
