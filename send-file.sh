@@ -7,7 +7,7 @@ local_path="$1" remote_path="$2"
 case "$remote_path" in "~") remote_path="\$HOME";; "~/"*) remote_path="\$HOME/${remote_path#"~"/}";; esac
 [ -f "$local_path" ] || { echo "本地文件不存在: $local_path" >&2; exit 2; }
 size="$(wc -c < "$local_path")"
-[ "$size" -lt 1048576 ] || { echo "文件 $size 字节，超过 1MB；请用 XFTP 手动传输。" >&2; exit 2; }
+[ "$size" -lt 92160 ] || { echo "文件 $size 字节，超过 kit 传输上限 90KB；大文件请用 SFTP 客户端（见 README 3.2）。" >&2; exit 2; }
 
 b64="$(base64 -w0 "$local_path")"
 sum="$(md5sum "$local_path" | awk '{print $1}')"

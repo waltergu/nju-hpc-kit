@@ -107,16 +107,23 @@ sshd_config（端口沿用现有空闲端口；被占用则自动另选并把新
 
 ## 3. 日常使用规则（AI 代理必读）
 
-1. 执行远程命令一律用：
-   `bash ~/nju-hpc-kit/run-session.sh '远程命令'`
+0. **日常入口只有一个**：无论校内网还是校外网，执行远程命令一律用
+   `bash ~/nju-hpc-kit/run-session.sh '远程命令'`（模式自动探测）。
+   校内网/VPN 零前置、零人工；校外网唯一的前置是"会话失效时"跑一次
+   `start-session.sh`（密码+两步认证），之后日常同样只用 run-session.sh。
+1. 命令约定：
    - 返回的是远程命令的真实退出码；stdout/stderr 原样带回。
    - 命令经 base64 编码传输，**不要在命令里做本地 shell 转义**，
      整段命令用单引号交给 run-session.sh 即可（含空格、引号、
      下标字符、中文路径等特殊字符都没问题）。
 2. 文件传输：
-   - 小文件（<1MB）：`send-file.sh <本地> <远程>` / `fetch-file.sh <远程> <本地>`，
-     自带 md5 校验，支持 `~/` 开头路径。
-   - 大文件或批量：让用户用 XFTP 手动拖拽（图形软件，不走本套件）。
+   - 小文件（脚本、配置、CSV 等几十 KB 级）：`send-file.sh <本地> <远程>` /
+     `fetch-file.sh <远程> <本地>`，自带 md5 校验，支持 `~/` 开头路径。
+   - 大文件/批量：kit 的 base64 传输有尺寸边界（campus 模式受 ssh 单参数
+     上限约束，约 96KB），且不支持断点续传——请改用任意 SFTP/SCP 客户端
+     （WinSCP、FileZilla、rsync、XFTP 等均可），连接参数：
+     - 校内网/VPN：`sftp -P <USERLAND_PORT> -i <KEY_FILE> <HPC_USER>@<LOGIN_IP>`（免密）；
+     - 校外网：经网关 entry.nju.edu.cn，交互式输入密码 + 两步认证。
 3. 批量操作请把远程逻辑写成脚本文件，send-file 上去后一条命令执行，
    避免几十个往返（每次 run-session 有 1–3 秒开销）。
 4. 长时间任务**不要**挂在前台 ssh：用集群调度系统（Slurm）提交，

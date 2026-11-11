@@ -11,7 +11,7 @@ case "$local_path" in "~") local_path="$HOME";; "~/"*) local_path="$HOME/${local
 info="$(bash "$KIT_DIR/run-session.sh" "wc -c < \"$remote_path\"; md5sum \"$remote_path\" | awk '{print \$1}'")"
 size="$(printf '%s\n' "$info" | sed -n 1p)"
 sum="$(printf '%s\n' "$info" | sed -n 2p)"
-[ "$size" -lt 1048576 ] || { echo "文件 $size 字节，超过 1MB；请用 XFTP 手动传输。" >&2; exit 2; }
+[ "$size" -lt 92160 ] || { echo "文件 $size 字节，超过 kit 传输上限 90KB；大文件请用 SFTP 客户端（见 README 3.2）。" >&2; exit 2; }
 
 b64="$(bash "$KIT_DIR/run-session.sh" "base64 -w0 \"$remote_path\"")"
 printf '%s' "$b64" | base64 -d > "$local_path"
